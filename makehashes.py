@@ -5,21 +5,21 @@ import unicodedata
 import string
 import hashlib
 
-def uberhasher(listoffunctions, listofmetadata):
+def uber_hasher(listoffunctions, listofmetadata):
     metahashlist = [] # a list of lists; each internal list goes w/ a chunk of metadata
     for metadata in listofmetadata:
         listofhashes = []    
         for function in listoffunctions:
-            listofhashes.append(function(metadata))
+            listofhashes.append(normalize_string(function(metadata)))
         metahashlist.append(listofhashes)
     return(metahashlist)
-    
-    
-    return(titlehash(title), contributorhash(contributors), descriptionhash(description))
 
-def normalizestring(astring): # takes a unicode string
+def normalize_string(astring): # takes a unicode string
     # docs.python.org/2/library/unicodedata.html
     # TODO: this does not work for æ or Æ! What else?
+    astring = astring.replace(u'æ',u'ae')
+    astring = astring.replace(u'Æ',u'Ae')
+    astring = astring.replace(u'ß', u'ss') # assumes good transliteration
     bstring = unicodedata.normalize('NFKD', astring).encode('ascii','ignore')
     bstring = bstring.lower()
     exclude = set(string.punctuation)
@@ -28,17 +28,15 @@ def normalizestring(astring): # takes a unicode string
     bstring = hashlib.md5(bstring).hexdigest()
     return bstring # returns an ascii string, all stuck together
 
-def titlehash(metadata): # takes a dictionary
+def grab_title(metadata): # takes a dictionary
     title = metadata['title']
-    normalizedtitle = normalizestring(title)
-    return normalizedtitle  # returns an ascii string
+    return title  # returns an ascii string
 
-def descriptionhash(metadata): #takes a dictionary
+def grab_description(metadata): #takes a dictionary
     description = metadata['description']
-    normdescription = normalizestring(description)
-    return normdescription # returns an actual hash; string of hexadecimal characters
+    return description # returns an actual hash; string of hexadecimal characters
 
-def contributorhash(metadata): # takes a dictionary
+def grab_contributors(metadata): # takes a dictionary
     contributors = metadata['contributors'] # this is a list
     namehash = ''
     for contributor in contributors:
@@ -46,8 +44,7 @@ def contributorhash(metadata): # takes a dictionary
         # can we please just have surname and givenname split out?
         name = contributor['name'].split()
         fullname = name[0] + name[len(name)-1]
-        normedname = normalizestring(fullname)
-        namehash += normedname
+        namehash += fullname
     return namehash
     
 if __name__ == '__main__':
@@ -84,7 +81,7 @@ if __name__ == '__main__':
     }
     ]
 
-    print uberhasher([titlehash, descriptionhash, contributorhash], somedata)
+    print uber_hasher([grab_title, grab_description, grab_contributors], somedata)
     
 
 
