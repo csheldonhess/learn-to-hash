@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 import unicodedata
@@ -6,17 +5,19 @@ import string
 import hashlib
 
 def uber_hasher(listoffunctions, listofmetadata):
-    metahashlist = [] # a list of lists; each internal list goes w/ a chunk of metadata
+    metahashlist = []
     for metadata in listofmetadata:
         listofhashes = []    
         for function in listoffunctions:
             listofhashes.append(normalize_string(function(metadata)))
         metahashlist.append(listofhashes)
-    return(metahashlist)
+    return(metahashlist) # a list of lists; each internal list goes w/ a chunk of metadata
 
-def normalize_string(astring): # takes a unicode string
+def normalize_string(astring): # takes a unicode string or a list of strings
     # docs.python.org/2/library/unicodedata.html
-    # TODO: this does not work for æ or Æ! What else?
+    # TODO: this may not work for some unicode characters; I dealt w/
+    # special cases I know about; are there others?
+    # (when it fails to transliterate, it replaces with '')
     astring = astring.replace(u'æ',u'ae')
     astring = astring.replace(u'Æ',u'Ae')
     astring = astring.replace(u'ß', u'ss') # assumes good transliteration
@@ -24,28 +25,29 @@ def normalize_string(astring): # takes a unicode string
     bstring = bstring.lower()
     exclude = set(string.punctuation)
     exclude.add(' ')
+    exclude.add('\n')
     bstring = ''.join(ch for ch in bstring if ch not in exclude)
     bstring = hashlib.md5(bstring).hexdigest()
-    return bstring # returns an ascii string, all stuck together
+    return bstring # returns a hash of the string or list
 
 def grab_title(metadata): # takes a dictionary
     title = metadata['title']
-    return title  # returns an ascii string
+    return title  # returns a unicode string
 
 def grab_description(metadata): #takes a dictionary
     description = metadata['description']
-    return description # returns an actual hash; string of hexadecimal characters
+    return description # returns a unicode string, possibly VERY long
 
 def grab_contributors(metadata): # takes a dictionary
     contributors = metadata['contributors'] # this is a list
-    namehash = ''
+    namelist = ''
     for contributor in contributors:
         # strip middle names/initials - not going to work for honorifics, degrees
         # can we please just have surname and givenname split out?
         name = contributor['name'].split()
         fullname = name[0] + name[len(name)-1]
-        namehash += fullname
-    return namehash
+        namelist += fullname
+    return namelist # returns a list of strings
     
 if __name__ == '__main__':
     longtext = '''Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots
@@ -77,14 +79,14 @@ if __name__ == '__main__':
         }, {
             'name': u'Albemarle K. Jôñes',
             'email': u'yeah@maps.yeah',
-        }],
+        },
+           {
+            'name': u'Ædgär E. Cummíngs',
+            'email': u'poets@poetry.poem',
+        },
+        ],
         'description': unicode(longtext),
     }
     ]
 
     print uber_hasher([grab_title, grab_description, grab_contributors], somedata)
-    
-
-
-
-
