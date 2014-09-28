@@ -5,10 +5,16 @@ import unicodedata
 import string
 import hashlib
 
-def uberhasher(metadata):
-    title = metadata['title']
-    contributors = metadata['contributors']
-    description = metadata['description']
+def uberhasher(listoffunctions, listofmetadata):
+    metahashlist = [] # a list of lists; each internal list goes w/ a chunk of metadata
+    for metadata in listofmetadata:
+        listofhashes = []    
+        for function in listoffunctions:
+            listofhashes.append(function(metadata))
+        metahashlist.append(listofhashes)
+    return(metahashlist)
+    
+    
     return(titlehash(title), contributorhash(contributors), descriptionhash(description))
 
 def normalizestring(astring): # takes a unicode string
@@ -19,18 +25,21 @@ def normalizestring(astring): # takes a unicode string
     exclude = set(string.punctuation)
     exclude.add(' ')
     bstring = ''.join(ch for ch in bstring if ch not in exclude)
+    bstring = hashlib.md5(bstring).hexdigest()
     return bstring # returns an ascii string, all stuck together
 
-def titlehash(title): # takes a unicode string
+def titlehash(metadata): # takes a dictionary
+    title = metadata['title']
     normalizedtitle = normalizestring(title)
     return normalizedtitle  # returns an ascii string
 
-def descriptionhash(description): #takes a unicode string
+def descriptionhash(metadata): #takes a dictionary
+    description = metadata['description']
     normdescription = normalizestring(description)
-    normdescription = hashlib.md5(normdescription).hexdigest()
     return normdescription # returns an actual hash; string of hexadecimal characters
 
-def contributorhash(contributors): # takes a list of dictionaries, unicode
+def contributorhash(metadata): # takes a dictionary
+    contributors = metadata['contributors'] # this is a list
     namehash = ''
     for contributor in contributors:
         # strip middle names/initials - not going to work for honorifics, degrees
@@ -75,8 +84,7 @@ if __name__ == '__main__':
     }
     ]
 
-    for metadata in somedata:
-        print(uberhasher(metadata))
+    print uberhasher([titlehash, descriptionhash, contributorhash], somedata)
     
 
 
